@@ -2,7 +2,8 @@ import os
 
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
-
+from flask_serialize import FlaskSerialize
+from flask_cors import CORS
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Table
 
@@ -12,6 +13,8 @@ app.config[
 ] = f"mysql://{os.environ.get('DATABASE_USER')}:{os.environ.get('DATABASE_PW')}@{os.environ.get('DATABASE_URL')}/{os.environ.get('DATABASE_NAME')}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+CORS(app)
+fs_mixin = FlaskSerialize(db)
 
 scents_to_categories = Table(
     "scents_categories",
@@ -35,7 +38,7 @@ scents_to_tags = Table(
 )
 
 
-class House(db.Model):
+class House(db.Model, fs_mixin):
     """Represents a perfume house, or a producer of scents."""
 
     id = Column(Integer, primary_key=True)
@@ -45,11 +48,14 @@ class House(db.Model):
     # abbreviations
     # collections
 
+    # serializer fields
+    __fs_create_fields__ = __fs_update_fields__ = ["id", "name"]
+
     def __repr__(self):
         return f"<House {self.name}>"
 
 
-class Scent(db.Model):
+class Scent(db.Model, fs_mixin):
     """Represents a single scent in a House's lineup."""
 
     id = Column(Integer, primary_key=True)
@@ -63,6 +69,16 @@ class Scent(db.Model):
     )
     tags = relationship("Tag", secondary=scents_to_tags, backref="tags", lazy="select")
     discontinued = Column(Boolean, default=False)
+
+    # serializer fields
+    __fs_create_fields__ = __fs_update_fields__ = [
+        "id",
+        "name",
+        "house_id",
+        "categories",
+        "notes",
+    ]
+
     # collection
     # formats
 
@@ -75,6 +91,9 @@ class Category(db.Model):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(80), unique=True, nullable=False)
+
+    # serializer fields
+    __fs_create_fields__ = __fs_update_fields__ = ["id", "name"]
 
     def __repr__(self):
         return f"<Category {self.name}>"
@@ -90,6 +109,9 @@ class Note(db.Model):
     name = Column(String(80), unique=True, nullable=False)
     # subcategories
 
+    # serializer fields
+    __fs_create_fields__ = __fs_update_fields__ = ["id", "name"]
+
     def __repr__(self):
         return f"<Note {self.name}>"
 
@@ -99,6 +121,9 @@ class Tag(db.Model):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(120), unique=True, nullable=False)
+
+    # serializer fields
+    __fs_create_fields__ = __fs_update_fields__ = ["id", "name"]
 
     def __repr__(self):
         return f"<Tag {self.name}>"
@@ -150,6 +175,11 @@ def hello_world():
     """Says hello"""
 
     return render_template("index.html")
+
+
+@app.route("/scents/", methods=["GET"])
+def getScents():
+    return Scent.fs_get_delete_put_post()
 
 
 if __name__ == "__main__":

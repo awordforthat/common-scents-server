@@ -5,7 +5,7 @@ This is the server for the Common Scents project, an indie perfume categorizatio
 Current dependencies include: 
 - Flask
 - black (for formatting)
-- pyling (for code style)
+- pylint (for code style)
 
 ## Getting Started
 1. Create a virtual environment with `python -m venv venv` (in bash) or `py -3 -m venv venv` in the Windows command prompt.
