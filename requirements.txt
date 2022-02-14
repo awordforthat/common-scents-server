@@ -1,10 +1,13 @@
+aniso8601==9.0.1
+-e git+ssh://git@github.com/awordforthat/common-scents-server.git@36cdba0c8461cdaa17b0a8cc1a871ba53dfd6255#egg=app
 astroid==2.9.3
 black==22.1.0
 click==8.0.3
 colorama==0.4.4
 Flask==2.0.2
 Flask-Cors==3.0.10
-flask-serialize==2.0.3
+flask-marshmallow==0.14.0
+Flask-RESTful==0.3.9
 Flask-SQLAlchemy==2.5.1
 greenlet==1.1.2
 gunicorn==20.1.0
@@ -13,6 +16,8 @@ itsdangerous==2.0.1
 Jinja2==3.0.3
 lazy-object-proxy==1.7.1
 MarkupSafe==2.0.1
+marshmallow==3.14.1
+marshmallow-sqlalchemy==0.27.0
 mccabe==0.6.1
 mypy-extensions==0.4.3
 mysqlclient==2.1.0
@@ -21,6 +26,7 @@ permissive-dict==1.0.4
 platformdirs==2.5.0
 pylint==2.12.2
 python-dotenv==0.19.2
+pytz==2021.3
 six==1.16.0
 SQLAlchemy==1.4.31
 toml==0.10.2
