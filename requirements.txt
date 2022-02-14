@@ -1,5 +1,4 @@
 aniso8601==9.0.1
--e git+ssh://git@github.com/awordforthat/common-scents-server.git@36cdba0c8461cdaa17b0a8cc1a871ba53dfd6255#egg=app
 astroid==2.9.3
 black==22.1.0
 click==8.0.3
