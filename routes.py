@@ -1,10 +1,8 @@
 import functools
 from flask import abort
 from flask_restful import Resource, fields
-from flask_cors import cross_origin
 
 from models import Scent, ScentSchema
-from flask_restful import Api
 
 resource_fields = {"id": fields.Integer, "name": fields.String}
 
@@ -22,7 +20,6 @@ class ModelView(Resource):
         self.schema = schema
         self.query = functools.partial(get_or_404, self.model)
 
-    @cross_origin
     def get(self, *args, **kwargs):
         return self.schema.dump(self.query(*args, **kwargs))
 

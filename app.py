@@ -21,7 +21,13 @@ def create_app():
 
     api = Api(app)
     setup_routes(api)
-    CORS(app, resources={r"*": {"origins": "*"}})
+    CORS(app)
+
+    @app.after_request
+    def after_request(response):
+        header = response.headers
+        header["Access-Control-Allow-Origin"] = "*"
+        return response
 
     return app
 
