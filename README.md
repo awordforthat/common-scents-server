@@ -34,13 +34,13 @@ SQLALCHEMY_ECHO=True
 
 ## Custom Management Commands
 
-The server provides two custom commands for ease of development.
+~~The server provides two custom commands for ease of development.~~
 
-_**WARNING**_: **Both of these commands will destroy any current records in the database. Make sure you are not pointing at a database you care about before you run these!**
+~~_**WARNING**_: **Both of these commands will destroy any current records in the database. Make sure you are not pointing at a database you care about before you run these!**~~
 
-`initdb`: Drops all existing tables and recreates empty ones.
+~~`initdb`: Drops all existing tables and recreates empty ones.~~
 
-`bootstrap`: Drops all existing tables, recreates empty ones, and populates the tables with example data.
+~~`bootstrap`: Drops all existing tables, recreates empty ones, and populates the tables with example data.~~
 
 #
 
