@@ -13,8 +13,6 @@ def create_app():
     ] = f"mysql://{os.environ.get('DATABASE_USER')}:{os.environ.get('DATABASE_PW')}@{os.environ.get('DATABASE_URL')}/{os.environ.get('DATABASE_NAME')}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    CORS(app)
-
     from models import db
 
     db.init_app(app)
@@ -23,6 +21,7 @@ def create_app():
 
     api = Api(app)
     setup_routes(api)
+    CORS(app, resources={r"*": {"origins": "*"}})
 
     return app
 
