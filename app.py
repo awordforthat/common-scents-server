@@ -1,7 +1,6 @@
 import os
 
-from flask import Flask
-from flask_cors import CORS
+from flask import Flask, current_app
 from flask_restful import Api
 
 
@@ -21,7 +20,16 @@ def create_app():
 
     api = Api(app)
     setup_routes(api)
-    CORS(app, resources={r"/*": {"origins": "*"}})
+
+    @app.after_request
+    def after_request(response):
+        print("Hello")
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization"
+        )
+        response.headers.add("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE")
+        return response
 
     return app
 
