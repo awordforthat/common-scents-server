@@ -1,16 +1,19 @@
-import os
+import os, logging
 
-from flask import Flask, current_app
+from flask import Flask
 from flask_restful import Api
+from flask_cors import CORS
 
 
 def create_app():
+    logging.getLogger("flask_cors").level = logging.DEBUG
     app = Flask(__name__)
     app.config[
         "SQLALCHEMY_DATABASE_URI"
     ] = f"mysql://{os.environ.get('DATABASE_USER')}:{os.environ.get('DATABASE_PW')}@{os.environ.get('DATABASE_URL')}/{os.environ.get('DATABASE_NAME')}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["CORS_HEADERS"] = "Content-Type"
+    app.config["CORS_ORIGINS"] = "*"
 
     from models import db
 
@@ -19,6 +22,7 @@ def create_app():
     from routes import setup_routes
 
     api = Api(app)
+    CORS(app)
     setup_routes(api)
     return app
 
