@@ -1,6 +1,7 @@
 import os, logging
 
-from flask import Flask
+from flask import Flask, appcontext_popped
+from flask.cli import FlaskGroup
 from flask_restful import Api
 from flask_cors import CORS
 
@@ -14,12 +15,13 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["CORS_HEADERS"] = "Content-Type"
     app.config["CORS_ORIGINS"] = "*"
+    app.config["MAX_CONTENT_LENGTH"] = 16 * 1000 * 1000
 
     from models import db
 
     db.init_app(app)
 
-    from routes import setup_routes
+    from views import setup_routes
 
     api = Api(app)
     CORS(app)
@@ -27,12 +29,21 @@ def create_app():
     return app
 
 
-# @app.cli.command("initdb")
+cli = FlaskGroup(create_app=create_app)
+
+
+@cli.command("initdb")
+def initdb():
+    from models import db
+
+    db.drop_all()
+    db.create_all()
+
+
+# @appcontext_popped.cli.command("initdb")
 # def initdb():
-#     with app.app_context():
-#         db.drop_all()
-#         db.create_all()
-#         print("Initialized db")
+
+#     from models import db
 
 
 # @app.cli.command("bootstrap")
@@ -70,5 +81,5 @@ def create_app():
 #         db.session.commit()
 
 
-# if __name__ == "__main__":
-#     app.run(debug=os.environ.get("DEBUG"))
+if __name__ == "__main__":
+    cli()

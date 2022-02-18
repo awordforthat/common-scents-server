@@ -30,24 +30,6 @@ scents_to_tags = Table(
 )
 
 
-class House(db.Model):
-    """Represents a perfume house, or a producer of scents."""
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(80), unique=True, nullable=False)
-    link = Column(String(255), unique=True)
-    # abbreviations
-    # collections
-
-    def __repr__(self):
-        return f"<House {self.name}>"
-
-
-class HouseSchema(SQLAlchemyAutoSchema):
-    class Meta:
-        model = House
-
-
 class Category(db.Model):
     """Represents a label that can be applied to a group of scents across any number of houses."""
 
@@ -85,9 +67,12 @@ class Tag(db.Model):
 class Scent(db.Model):
     """Represents a single scent in a House's lineup."""
 
+    __table_args__ = (
+        db.UniqueConstraint("slug", "house_id", name="unique_scent_house"),
+    )
     id = Column(Integer, primary_key=True)
-    name = Column(String(80), unique=True, nullable=False)
-    house_id = Column(Integer, ForeignKey("house.id"))
+    slug = Column(String(80), nullable=False)
+    name = Column(String(80))
     categories = relationship(
         "Category", secondary=scents_to_categories, backref="scents", lazy="select"
     )
@@ -96,7 +81,7 @@ class Scent(db.Model):
     )
     tags = relationship("Tag", secondary=scents_to_tags, backref="tags", lazy="select")
     discontinued = Column(Boolean, default=False)
-
+    house_id = Column(Integer, ForeignKey("house.id"))
     # collection
     # formats
 
@@ -104,13 +89,30 @@ class Scent(db.Model):
         return f"<Scent {self.name}>: {' ,'.join([str(category) for category  in self.categories])}"
 
 
+class House(db.Model):
+    """Represents a perfume house, or a producer of scents."""
+
+    id = Column(Integer, primary_key=True)
+    slug = Column(String(80), unique=True, nullable=False)  # name, slugified
+    name = Column(String(80))  # human readable name
+    link = Column(String(255), unique=True)
+    scents = relationship(
+        "Scent", backref="house", lazy="select", cascade="all, delete"
+    )
+    # abbreviations
+    # collections
+
+    def __repr__(self):
+        return f"<House {self.name}>"
+
+
+class HouseSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = House
+
+
 class ScentSchema(SQLAlchemyAutoSchema):
     house = fields.Nested(HouseSchema)
 
     class Meta:
         model = Scent
-
-
-House.__mapper__.add_property(
-    "scents", relationship("Scent", backref="house", lazy="select")
-)
