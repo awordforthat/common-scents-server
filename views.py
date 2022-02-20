@@ -66,7 +66,9 @@ class ScentList(ModelListView):
 
 class BatchUploadView(Resource):
     def post(self, *args, **kwargs):
-        spreadsheet = request.files["spreadsheet"]
+        db.drop_all()
+        db.create_all()
+        spreadsheet = request.files.get("file")
         if not spreadsheet:
             return error("No spreadsheet attached!")
         # If the user does not select a file, the browser submits an
@@ -120,6 +122,8 @@ class BatchUploadView(Resource):
             log = []
             for index, row in df.iterrows():
                 row_house = df["house"][index]
+                if pd.isnull(row_house):
+                    row["house"] = house_name
                 house_name = house_name if pd.isnull(row_house) else row_house
                 house = House.query.filter_by(slug=slugify(house_name)).first()
                 if not house:
@@ -128,11 +132,19 @@ class BatchUploadView(Resource):
                     log.append(
                         (f"Added house {house_name} with slug {slugify(house_name)}")
                     )
-                house_scents = house.scents
-                row_scent = df["scent"][index]
-                print(row_scent)
-                db.session.commit()
 
+                scent_name = df["scent"][index]
+                scent_slug = slugify(scent_name)
+                scent = Scent.query.filter_by(slug=scent_slug).first()
+                if not scent:
+                    db.session.add(Scent(house=house, name=df["scent"][index], slug=scent_slug,
+                        description=df["description"][index] if "description" in df.columns else None))
+                    log.append(
+                        (f"Added scent {scent_name} to house {house_name}")
+                    )
+            db.session.commit()
+            return log
+           
         else:
             return error(
                 f"File upload type '{file_extension(spreadsheet.filename)}' not allowed. Please only upload '{', '.join(ALLOWED_UPLOAD_EXTENSIONS)}' files"

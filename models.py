@@ -73,6 +73,7 @@ class Scent(db.Model):
     id = Column(Integer, primary_key=True)
     slug = Column(String(80), nullable=False)
     name = Column(String(80))
+    description = Column(String(10000))
     categories = relationship(
         "Category", secondary=scents_to_categories, backref="scents", lazy="select"
     )
