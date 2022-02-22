@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from flask import request
 from flask_restful import Resource, fields
@@ -64,10 +65,17 @@ class ScentList(ModelListView):
         super(ScentList, self).__init__(Scent, ScentSchema(many=True))
 
 
+class ClearDataView(Resource):
+    def post(self, *args, **kwargs):
+        if request.get_json(force=True).get("secret") == os.environ.get("ENDPOINT_SECRET"):
+            db.drop_all()
+            db.create_all()
+            return "Database cleared"
+        else:
+            return "Secret code not detected. Database intact"
+
 class BatchUploadView(Resource):
     def post(self, *args, **kwargs):
-        db.drop_all()
-        db.create_all()
         spreadsheet = request.files.get("file")
         if not spreadsheet:
             return error("No spreadsheet attached!")
@@ -119,7 +127,10 @@ class BatchUploadView(Resource):
             # iterate over the rows, creating records as necessary (see docstring)
             # TODO: incorporate house synonyms
             house_name = None
-            log = []
+            results = {
+                "newHouses": [],
+                "newScents": []
+            }
             for index, row in df.iterrows():
                 row_house = df["house"][index]
                 if pd.isnull(row_house):
@@ -129,21 +140,19 @@ class BatchUploadView(Resource):
                 if not house:
                     house = House(slug=slugify(row["house"]), name=row["house"])
                     db.session.add(house)
-                    log.append(
-                        (f"Added house {house_name} with slug {slugify(house_name)}")
-                    )
-
-                scent_name = df["scent"][index]
+                    results["newHouses"].append(house_name)
+        
+                if pd.isnull(df["scent"][index]):
+                    continue
+                scent_name = df["scent"][index] 
                 scent_slug = slugify(scent_name)
                 scent = Scent.query.filter_by(slug=scent_slug).first()
                 if not scent:
                     db.session.add(Scent(house=house, name=df["scent"][index], slug=scent_slug,
-                        description=df["description"][index] if "description" in df.columns else None))
-                    log.append(
-                        (f"Added scent {scent_name} to house {house_name}")
-                    )
+                       ))
+                    results["newScents"].append(scent_name)
             db.session.commit()
-            return log
+            return results
            
         else:
             return error(
@@ -155,3 +164,4 @@ def setup_routes(api):
     api.add_resource(ScentView, "/scents/<id>")
     api.add_resource(ScentList, "/scents")
     api.add_resource(BatchUploadView, "/upload")
+    api.add_resource(ClearDataView, "/danger-recreate-database")
