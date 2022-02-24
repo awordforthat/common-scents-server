@@ -67,7 +67,8 @@ class ScentList(ModelListView):
 
 class ClearDataView(Resource):
     def post(self, *args, **kwargs):
-        if request.get_json(force=True).get("secret") == os.environ.get("ENDPOINT_SECRET"):
+        if request.get_json(force=True).get("secret") == os.environ.get("ENDPOINT_SECRET") and \
+        os.environ.get("FLASK_ENV") != "production":
             db.drop_all()
             db.create_all()
             return "Database cleared"
@@ -124,6 +125,12 @@ class BatchUploadView(Resource):
                 list(set(COLUMN_SYNONYMS.keys()).intersection(set(df.columns.values)))
             ]
 
+            # add missing columns (with empty contents) so we have a consistent dataframe
+            # going forwards
+            for key in COLUMN_SYNONYMS.keys():
+                if not key in df:
+                    df[key] = None
+
             # iterate over the rows, creating records as necessary (see docstring)
             # TODO: incorporate house synonyms
             house_name = None
@@ -147,9 +154,10 @@ class BatchUploadView(Resource):
                 scent_name = df["scent"][index] 
                 scent_slug = slugify(scent_name)
                 scent = Scent.query.filter_by(slug=scent_slug).first()
+                print(df["description"][index])
                 if not scent:
                     db.session.add(Scent(house=house, name=df["scent"][index], slug=scent_slug,
-                       ))
+                       description=df["description"][index]))
                     results["newScents"].append(scent_name)
             db.session.commit()
             return results
