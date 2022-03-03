@@ -20,6 +20,15 @@ COLUMN_SYNONYMS = {
     "format": ("format", "type"),
 }
 
+def load_house_synonyms():
+    synonyms = {}
+    with open("./fixtures/house_synonyms.csv") as f:
+        for line in f.readlines():
+            line = line.strip().split(",")
+            synonyms[line[0]] = tuple(set([str.lower(syn) for syn in line[1:] if syn]))
+    return synonyms
+
+HOUSE_SYNONYMS = load_house_synonyms()
 
 def get_related_by_id(obj, property_name, id):
     relation = getattr(obj.__class__, property_name)  # in example: User.addresses
@@ -132,33 +141,58 @@ class BatchUploadView(Resource):
                     df[key] = None
 
             # iterate over the rows, creating records as necessary (see docstring)
-            # TODO: incorporate house synonyms
             house_name = None
             results = {
                 "newHouses": [],
                 "newScents": []
             }
+            
+            existing_slugs = [house.slug for house in House.query.all()]
+            houses_to_add = set()
+    
+            for house_name in df[["house"]].dropna(how="all")["house"]:
+                fixed_name = house_name
+                for canonical_name, synonyms in HOUSE_SYNONYMS.items():
+                    if str.lower(house_name) in synonyms:
+                        df["house"].replace(house_name, value=canonical_name, inplace=True)
+                        fixed_name=canonical_name
+                        break
+                if slugify(fixed_name) not in existing_slugs:
+                    houses_to_add.add(fixed_name)
+            
+            houses = [House(slug=slugify(name), name=name) for name in houses_to_add]
+            results["newHouses"].extend(houses_to_add)
+            try:
+                db.session.bulk_save_objects(houses)
+            except Exception: 
+                return {
+                    "error": "Failed to add new houses to database"
+                }
+                
+            
             for index, row in df.iterrows():
                 row_house = df["house"][index]
                 if pd.isnull(row_house):
                     row["house"] = house_name
                 house_name = house_name if pd.isnull(row_house) else row_house
-                house = House.query.filter_by(slug=slugify(house_name)).first()
-                if not house:
-                    house = House(slug=slugify(row["house"]), name=row["house"])
-                    db.session.add(house)
-                    results["newHouses"].append(house_name)
-        
+                if not pd.isnull(row_house):
+                    house = House.query.filter_by(slug=slugify(house_name)).first() 
+              
+                # sometimes houses have their own row as a subheader
                 if pd.isnull(df["scent"][index]):
                     continue
+
                 scent_name = df["scent"][index] 
                 scent_slug = slugify(scent_name)
                 scent = Scent.query.filter_by(slug=scent_slug).first()
-                print(df["description"][index])
                 if not scent:
                     db.session.add(Scent(house=house, name=df["scent"][index], slug=scent_slug,
                        description=df["description"][index]))
                     results["newScents"].append(scent_name)
+                else:
+                    # TODO: patch with missing data
+                    pass
+                    
             db.session.commit()
             return results
            

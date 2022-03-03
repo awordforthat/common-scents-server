@@ -29,6 +29,13 @@ scents_to_tags = Table(
     Column("tag_id", Integer, ForeignKey("tag.id"), primary_key=True),
 )
 
+house_synonyms = Table(
+    "house_synonyms",
+    db.metadata,
+    Column("house_id", Integer, ForeignKey("house.id"), primary_key=True),
+    Column("synonym", String(80))
+)
+
 
 class Category(db.Model):
     """Represents a label that can be applied to a group of scents across any number of houses."""
@@ -100,7 +107,16 @@ class House(db.Model):
     scents = relationship(
         "Scent", backref="house", lazy="select", cascade="all, delete"
     )
-    # abbreviations
+    # _synonyms = Column(String(255), default="")
+
+    # @property
+    # def synonyms(self):
+    #     return [x for x in self._synonyms.split(';')]
+
+    # @synonyms.setter
+    # def ratings(self, value):
+    #     self._synonyms += ';%s' % value
+        
     # collections
 
     def __repr__(self):
